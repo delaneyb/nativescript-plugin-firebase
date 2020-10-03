@@ -2740,4 +2740,10 @@ export class QuerySnapshot implements firestore.QuerySnapshot {
   }
 }
 
+firebase.firestore.FieldPath = class {
+  static documentId() {
+    return com.google.firebase.firestore.FieldPath.documentId();
+  }
+}
+
 module.exports = firebase;

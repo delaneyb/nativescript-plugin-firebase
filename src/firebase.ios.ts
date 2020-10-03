@@ -2246,28 +2246,30 @@ firebase.firestore._getQuery = (collectionPath: string, query: FIRQuery): firest
   };
 };
 
-firebase.firestore.where = (collectionPath: string, fieldPath: string, opStr: firestore.WhereFilterOp, value: any, query?: FIRQuery): firestore.Query => {
+firebase.firestore.where = (collectionPath: string, fieldPath: any, opStr: firestore.WhereFilterOp, value: any, query?: FIRQuery): firestore.Query => {
   ensureFirestore();
   try {
     query = query || FIRFirestore.firestore().collectionWithPath(collectionPath);
     value = fixSpecialField(value);
 
+    let queryFieldPathType = fieldPath instanceof FIRFieldPath ? 'FieldPath' : 'Field'
+
     if (opStr === "<") {
-      query = query.queryWhereFieldIsLessThan(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}IsLessThan`](fieldPath, value);
     } else if (opStr === "<=") {
-      query = query.queryWhereFieldIsLessThanOrEqualTo(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}IsLessThanOrEqualTo`](fieldPath, value);
     } else if (opStr === "==") {
-      query = query.queryWhereFieldIsEqualTo(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}IsEqualTo`](fieldPath, value);
     } else if (opStr === ">=") {
-      query = query.queryWhereFieldIsGreaterThanOrEqualTo(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}IsGreaterThanOrEqualTo`](fieldPath, value);
     } else if (opStr === ">") {
-      query = query.queryWhereFieldIsGreaterThan(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}IsGreaterThan`](fieldPath, value);
     } else if (opStr === "array-contains") {
-      query = query.queryWhereFieldArrayContains(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}ArrayContains`](fieldPath, value);
     } else if (opStr === "array-contains-any") {
-      query = query.queryWhereFieldArrayContainsAny(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}ArrayContainsAny`](fieldPath, value);
     } else if (opStr === "in") {
-      query = query.queryWhereFieldIn(fieldPath, value);
+      query = query[`queryWhere${queryFieldPathType}In`](fieldPath, value);
     } else {
       console.log("Illegal argument for opStr: " + opStr);
       return null;
@@ -2322,6 +2324,12 @@ firebase.firestore.endBefore = (collectionPath: string, snapshotOrFieldValue: Do
     return firebase.firestore._getQuery(collectionPath, query.queryEndingBeforeValues([snapshotOrFieldValue, ...fieldValues]));
   }
 };
+
+firebase.firestore.FieldPath = class {
+  static documentId() {
+    return FIRFieldPath.documentID();
+  }
+}
 
 class GIDSignInDelegateImpl extends NSObject implements GIDSignInDelegate {
   public static ObjCProtocols = [];
