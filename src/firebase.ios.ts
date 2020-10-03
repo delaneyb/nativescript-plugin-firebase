@@ -761,7 +761,7 @@ firebase.login = arg => {
 
         const fIRAuthCredential = FIREmailAuthProvider.credentialWithEmailPassword(arg.passwordOptions.email, arg.passwordOptions.password);
         if (fAuth.currentUser) {
-          // link credential, note that you only want to do this if this user doesn't already use fb as an auth provider
+          // link credential, note that you only want to do this if this user doesn't already use email + pass as an auth provider
           const onCompletionLink = (authData: FIRAuthDataResult, error: NSError) => {
             if (error) {
               // ignore, as this one was probably already linked, so just return the user
