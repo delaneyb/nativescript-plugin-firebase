@@ -2271,14 +2271,14 @@ firebase.firestore.where = (collectionPath: string, fieldPath: any, opStr: fires
     } else if (opStr === "in") {
       query = query[`queryWhere${queryFieldPathType}In`](fieldPath, value);
     } else {
-      console.log("Illegal argument for opStr: " + opStr);
+      console.error("Illegal argument for opStr: " + opStr);
       return null;
     }
 
     return firebase.firestore._getQuery(collectionPath, query);
 
   } catch (ex) {
-    console.log("Error in firebase.firestore.where: " + ex);
+    console.error("Error in firebase.firestore.where: " + ex);
     return null;
   }
 };
