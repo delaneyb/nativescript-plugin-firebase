@@ -1145,17 +1145,11 @@ firebase.login = arg => {
         appleIDRequest.nonce = sha256Nonce;
 
         const authorizationController = ASAuthorizationController.alloc().initWithAuthorizationRequests([appleIDRequest]);
-
         firebase.appleAuthDelegate = ASAuthorizationControllerDelegateImpl.createWithOwnerAndResolveReject(this as any, resolve, reject);
         authorizationController.delegate = firebase.appleAuthDelegate;
 
         authorizationController.presentationContextProvider = ASAuthorizationControllerPresentationContextProvidingImpl.createWithOwnerAndCallback(this as any);
 
-        CFRetain(delegate);
-        authorizationController.delegate = delegate;
-
-        authorizationController.presentationContextProvider = ASAuthorizationControllerPresentationContextProvidingImpl.createWithOwnerAndCallback(
-          new WeakRef(this));
         authorizationController.performRequests();
 
       } else if (arg.type === firebase.LoginType.GOOGLE) {
@@ -2702,7 +2696,7 @@ class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAut
   }
 
   public authorizationControllerDidCompleteWithError(controller, error): void {
-    this.callback(null, error.localizedDescription);
+    this.reject(error.localizedDescription);
   }
 }
 
