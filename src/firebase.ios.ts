@@ -639,7 +639,7 @@ function toLoginResult(user, additionalUserInfo?: FIRAdditionalUserInfo): User {
         const gidCurrentIdToken = GIDSignIn.sharedInstance().currentUser.authentication.idToken;
         providers.push({id: pid, token: gidCurrentIdToken});
       } else if (pid === "apple.com") {
-        // TODO
+        providers.push({id: pid });
       } else {
         providers.push({id: pid});
       }
@@ -947,11 +947,60 @@ firebase.login = arg => {
         appleIDRequest.nonce = sha256Nonce;
 
         const authorizationController = ASAuthorizationController.alloc().initWithAuthorizationRequests([appleIDRequest]);
-        const delegate = ASAuthorizationControllerDelegateImpl.createWithOwnerAndResolveReject(this, resolve, reject);
+
+        let delegate = ASAuthorizationControllerDelegateImpl.createWithOwnerAndCallback(new WeakRef(this), (authorization, error) => {
+          if (error === null) {
+            const appleIDCredential = authorization.credential;
+            const rawNonce = firebase._currentNonce;
+
+            if (!rawNonce) {
+              throw new Error("Invalid state: A login callback was received, but no login request was sent.");
+            }
+
+            if (!appleIDCredential.identityToken) {
+              console.log("Invalid state: A login callback was received, but no login request was sent.");
+              return;
+            }
+
+            const idToken = <string><unknown>NSString.alloc().initWithDataEncoding(appleIDCredential.identityToken, NSUTF8StringEncoding);
+
+            if (!idToken) {
+              throw new Error("Unable to serialize id token from data: " + appleIDCredential.identityToken);
+            }
+
+            // Initialize a Firebase credential.
+            const fIROAuthCredential = FIROAuthProvider.credentialWithProviderIDIDTokenRawNonce(
+              "apple.com", idToken, rawNonce);
+
+              
+            const fAuth = FIRAuth.auth();
+            
+            if (fAuth.currentUser) {
+              // link credential, note that you only want to do this if this user doesn't already have Apple as a sign in provider
+              const onCompletionLink = (user, error) => {
+                if (error) {
+                  // ignore, as this one was probably already linked, so just return the user
+                  log("--- linking error: " + error.localizedDescription);
+                  fAuth.signInWithCredentialCompletion(fIROAuthCredential, onCompletionWithAuthResult);
+                } else {
+                  onCompletionWithAuthResult(user, error);
+                }
+              };
+              fAuth.currentUser.linkWithCredentialCompletion(fIROAuthCredential, onCompletionLink);
+            } else {
+              fAuth.signInWithCredentialCompletion(fIROAuthCredential, onCompletionWithAuthResult);
+            }
+          } else {
+            reject(error.localizedDescription)
+          }
+          CFRelease(delegate);
+          delegate = undefined
+        });
         CFRetain(delegate);
         authorizationController.delegate = delegate;
 
-        authorizationController.presentationContextProvider = ASAuthorizationControllerPresentationContextProvidingImpl.createWithOwnerAndCallback(this);
+        authorizationController.presentationContextProvider = ASAuthorizationControllerPresentationContextProvidingImpl.createWithOwnerAndCallback(
+          new WeakRef(this));
 
         authorizationController.performRequests();
 
@@ -2435,65 +2484,27 @@ export class QuerySnapshot implements firestore.QuerySnapshot {
 class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAuthorizationControllerDelegate */ {
   public static ObjCProtocols = [];
   private owner: WeakRef<any>;
-  private resolve;
-  private reject;
+  private callback: (authorization: ASAuthorizationAppleIDCredential, error: NSError) => void;
 
-  public static createWithOwnerAndResolveReject(owner: WeakRef<any>, resolve, reject): ASAuthorizationControllerDelegateImpl {
+  public static createWithOwnerAndCallback(owner: WeakRef<any>, callback): ASAuthorizationControllerDelegateImpl {
     // defer initialisation because this is only available since iOS 13
     if (ASAuthorizationControllerDelegateImpl.ObjCProtocols.length === 0 && parseInt(device.osVersion) >= 13) {
       ASAuthorizationControllerDelegateImpl.ObjCProtocols.push(ASAuthorizationControllerDelegate);
     }
     let delegate = <ASAuthorizationControllerDelegateImpl>ASAuthorizationControllerDelegateImpl.new();
     delegate.owner = owner;
-    delegate.resolve = resolve;
-    delegate.reject = reject;
+    delegate.callback = callback;
     return delegate;
   }
 
   public authorizationControllerDidCompleteWithAuthorization(controller, authorization): void {
     if (authorization.credential instanceof ASAuthorizationAppleIDCredential) {
-      const appleIDCredential = authorization.credential;
-      const rawNonce = firebase._currentNonce;
-
-      if (!rawNonce) {
-        throw new Error("Invalid state: A login callback was received, but no login request was sent.");
-      }
-
-      if (!appleIDCredential.identityToken) {
-        console.log("Invalid state: A login callback was received, but no login request was sent.");
-        return;
-      }
-
-      const idToken = <string><unknown>NSString.alloc().initWithDataEncoding(appleIDCredential.identityToken, NSUTF8StringEncoding);
-
-      if (!idToken) {
-        throw new Error("Unable to serialize id token from data: " + appleIDCredential.identityToken);
-      }
-
-      // Initialize a Firebase credential.
-      const fIROAuthCredential = FIROAuthProvider.credentialWithProviderIDIDTokenRawNonce(
-          "apple.com", idToken, rawNonce);
-
-      // Sign in with Firebase.
-      FIRAuth.auth().signInWithCredentialCompletion(
-          fIROAuthCredential,
-          (authResult: FIRAuthDataResult, error: NSError) => {
-            if (error) {
-              this.reject(error.localizedDescription);
-            } else {
-              firebase.notifyAuthStateListeners({
-                loggedIn: true,
-                user: toLoginResult(authResult.user)
-              });
-              this.resolve(toLoginResult(authResult && authResult.user, authResult && authResult.additionalUserInfo));
-              CFRelease(this);
-            }
-          });
+      this.callback(authorization, null)
     }
   }
 
   public authorizationControllerDidCompleteWithError(controller, error): void {
-    this.reject(error.localizedDescription);
+    this.callback(null, error.localizedDescription);
   }
 }
 
