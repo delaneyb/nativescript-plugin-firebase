@@ -833,7 +833,7 @@ function toLoginResult(user, additionalUserInfo?: FIRAdditionalUserInfo): User {
         const gidCurrentIdToken = GIDSignIn.sharedInstance().currentUser.authentication.idToken;
         providers.push({id: pid, token: gidCurrentIdToken});
       } else if (pid === "apple.com") {
-        providers.push({id: pid });
+        providers.push({id: pid});
       } else {
         providers.push({id: pid});
       }
@@ -2643,7 +2643,8 @@ class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAut
     }
     const delegate = <ASAuthorizationControllerDelegateImpl>ASAuthorizationControllerDelegateImpl.new();
     delegate.owner = owner;
-    delegate.callback = callback;
+    delegate.resolve = resolve;
+    delegate.reject = reject;
     return delegate;
   }
 
@@ -2670,8 +2671,11 @@ class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAut
       // Initialize a Firebase credential.
       const fIROAuthCredential = FIROAuthProvider.credentialWithProviderIDIDTokenRawNonce(
           "apple.com", idToken, rawNonce);
-
-      const onCompletion = (authResult: FIRAuthDataResult, error: NSError) => {
+      
+      // Sign in with Firebase.
+      (FIRAuth.auth().currentUser ? FIRAuth.auth().currentUser.linkWithCredentialCompletion : FIRAuth.auth().signInWithCredentialCompletion)(
+        fIROAuthCredential,
+        (authResult: FIRAuthDataResult, error: NSError) => {
         if (error) {
           this.reject(error.localizedDescription);
         } else {
@@ -2682,16 +2686,7 @@ class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAut
           this.resolve(toLoginResult(authResult && authResult.user, authResult && authResult.additionalUserInfo));
           firebase.appleAuthDelegate = null;
         }
-      }
-
-      if (FIRAuth.auth().currentUser) {
-        // Link the new sign in method to the current user
-        FIRAuth.auth().currentUser.linkWithCredentialCompletion(fIROAuthCredential, onCompletion);
-      } else {
-        // Sign in with Firebase.
-        FIRAuth.auth().signInWithCredentialCompletion(fIROAuthCredential, onCompletion);
-      }
-
+      })
     }
   }
 
