@@ -2445,7 +2445,7 @@ firebase.firestore._getQuery = (collectionPath: string, query: FIRQuery): firest
   };
 };
 
-firebase.firestore.where = (collectionPath: string, fieldPath: any, opStr: firestore.WhereFilterOp, value: any, query?: FIRQuery): firestore.Query => {
+firebase.firestore.where = (collectionPath: string, fieldPath: string | FIRFieldPath, opStr: firestore.WhereFilterOp, value: any, query?: FIRQuery): firestore.Query => {
   ensureFirestore();
   try {
     query = query || FIRFirestore.firestore().collectionWithPath(collectionPath);
