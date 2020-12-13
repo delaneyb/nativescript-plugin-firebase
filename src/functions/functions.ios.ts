@@ -2,13 +2,9 @@ import * as firebase from "../firebase";
 import { firebaseUtils } from '../utils';
 import { HttpsCallable } from './functions';
 
-let functions: FIRFunctions;
 
 function getFunctions(region?: firebase.functions.SupportedRegions): FIRFunctions {
-  if (!functions) {
-    functions = region ? FIRFunctions.functionsForRegion(region) : FIRFunctions.functions();
-  }
-  return functions;
+  return region ? FIRFunctions.functionsForRegion(region) : FIRFunctions.functions();
 }
 
 export function httpsCallable<I = {}, O = {}>(functionName: string, region?: firebase.functions.SupportedRegions): HttpsCallable<I, O> {
