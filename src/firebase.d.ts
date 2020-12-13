@@ -782,6 +782,102 @@ export namespace firebase {
    * Tells the client to keep its local cache in sync with the server automatically.
    */
   export function keepInSync(path: string, switchOn: boolean): Promise<any>;
+
+  export namespace functions {
+    export function httpsCallable<I, O>(
+      callableFunctionName: string,
+      region?: SupportedRegions
+    ): HttpsCallable<I, O>;
+
+    export function useFunctionsEmulator(origin: string): void;
+  }
+
+  export namespace firestore {
+    export class FieldPath {
+      /**
+       * Creates a FieldPath from the provided field names. If more than one field
+       * name is provided, the path will point to a nested field in a document.
+       *
+       * @param fieldNames A list of field names.
+       */
+      constructor(...fieldNames: string[]);
+
+      /**
+       * Returns a special sentinel FieldPath to refer to the ID of a document.
+       * It can be used in queries to sort or filter by the document ID.
+       */
+      static documentId(): FieldPath;
+    }
+
+    export class FieldValue {
+      constructor(type: FieldValueType, value: any);
+
+      static serverTimestamp: () => "SERVER_TIMESTAMP";
+      static delete: () => "DELETE_FIELD";
+      static arrayUnion: (...elements: any[]) => FieldValue;
+      static arrayRemove: (...elements: any[]) => FieldValue;
+      static increment: (n: number) => FieldValue;
+    }
+
+    function collection(collectionPath: string): CollectionReference;
+
+    function collectionGroup(id: string): CollectionGroup;
+
+    function doc(
+      collectionPath: string,
+      documentPath?: string
+    ): DocumentReference;
+
+    function docRef(documentPath: string): DocumentReference;
+
+    function add(
+      collectionPath: string,
+      documentData: any
+    ): Promise<DocumentReference>;
+
+    function set(
+      collectionPath: string,
+      documentPath: string,
+      document: any,
+      options?: any
+    ): Promise<void>;
+
+    function getCollection(
+      collectionPath: string,
+      options?: GetOptions
+    ): Promise<QuerySnapshot>;
+
+    function getDocument(
+      collectionPath: string,
+      documentPath: string,
+      options?: GetOptions
+    ): Promise<DocumentSnapshot>;
+
+    function update(
+      collectionPath: string,
+      documentPath: string,
+      document: any
+    ): Promise<void>;
+
+    function runTransaction(
+      updateFunction: (transaction: firestore.Transaction) => Promise<any>
+    ): Promise<void>;
+
+    function batch(): firestore.WriteBatch;
+
+    function clearPersistence(): Promise<void>;
+
+    export function GeoPoint(latitude: number, longitude: number): GeoPoint;
+
+    /**
+     * Specifies custom settings to be used to configure the `Firestore`
+     * instance. Must be set before invoking any other methods.
+     *
+     * @param settings The settings to use.
+     */
+    export function settings(settings: Settings): void;
+
+  }
 }
 
 export namespace firestore {
@@ -801,8 +897,6 @@ export namespace firestore {
     longitude: number;
     latitude: number;
   }
-
-  export function GeoPoint(latitude: number, longitude: number): GeoPoint;
 
   export interface Settings {
     /** The hostname to connect to. */
@@ -843,14 +937,6 @@ export namespace firestore {
      */
     cacheSizeBytes?: number;
   }
-
-  /**
-   * Specifies custom settings to be used to configure the `Firestore`
-   * instance. Must be set before invoking any other methods.
-   *
-   * @param settings The settings to use.
-   */
-  export function settings(settings: Settings): void;
 
   export interface SetOptions {
     merge?: boolean;
@@ -1027,21 +1113,6 @@ export namespace firestore {
 
   export type UpdateData = { [fieldPath: string]: any };
 
-  export class FieldPath {
-    /**
-     * Creates a FieldPath from the provided field names. If more than one field
-     * name is provided, the path will point to a nested field in a document.
-     *
-     * @param fieldNames A list of field names.
-     */
-    constructor(...fieldNames: string[]);
-
-    /**
-     * Returns a special sentinel FieldPath to refer to the ID of a document.
-     * It can be used in queries to sort or filter by the document ID.
-     */
-    static documentId(): FieldPath;
-  }
 
   export interface Transaction {
     get(documentRef: DocumentReference): DocumentSnapshot;
@@ -1087,15 +1158,6 @@ export namespace firestore {
 
   export type FieldValueType = "ARRAY_UNION" | "ARRAY_REMOVE" | "INCREMENT";
 
-  export class FieldValue {
-    constructor(type: FieldValueType, value: any);
-
-    static serverTimestamp: () => "SERVER_TIMESTAMP";
-    static delete: () => "DELETE_FIELD";
-    static arrayUnion: (...elements: any[]) => FieldValue;
-    static arrayRemove: (...elements: any[]) => FieldValue;
-    static increment: (n: number) => FieldValue;
-  }
 
   export interface SnapshotListenOptions {
     readonly includeMetadataChanges?: boolean;
@@ -1177,56 +1239,9 @@ export namespace firestore {
     ): void;
   }
 
-  function collection(collectionPath: string): CollectionReference;
-
-  function collectionGroup(id: string): CollectionGroup;
-
-  function doc(
-    collectionPath: string,
-    documentPath?: string
-  ): DocumentReference;
-
-  function docRef(documentPath: string): DocumentReference;
-
-  function add(
-    collectionPath: string,
-    documentData: any
-  ): Promise<DocumentReference>;
-
-  function set(
-    collectionPath: string,
-    documentPath: string,
-    document: any,
-    options?: any
-  ): Promise<void>;
-
-  function getCollection(
-    collectionPath: string,
-    options?: GetOptions
-  ): Promise<QuerySnapshot>;
-
-  function getDocument(
-    collectionPath: string,
-    documentPath: string,
-    options?: GetOptions
-  ): Promise<DocumentSnapshot>;
-
-  function update(
-    collectionPath: string,
-    documentPath: string,
-    document: any
-  ): Promise<void>;
-
-  function runTransaction(
-    updateFunction: (transaction: firestore.Transaction) => Promise<any>
-  ): Promise<void>;
-
-  function batch(): firestore.WriteBatch;
-
-  function clearPersistence(): Promise<void>;
 }
 
-export namespace firebaseFunctions {
+export namespace functions {
   export type SupportedRegions =
     | "us-central1"
     | "us-east1"
@@ -1237,11 +1252,4 @@ export namespace firebaseFunctions {
     | "asia-northeast1";
 
   export type HttpsCallable<I, O> = (callableData: I) => Promise<O>;
-
-  export function httpsCallable<I, O>(
-    callableFunctionName: string,
-    region?: SupportedRegions
-  ): HttpsCallable<I, O>;
-
-  export function useFunctionsEmulator(origin: string): void;
 }
