@@ -214,7 +214,6 @@ export const firebase: any = {
     return result;
   }
 };
-export const firestore = firebase.firestore;
 
 export abstract class DocumentSnapshot {
   public data: () => firebase.firestore.DocumentData;
