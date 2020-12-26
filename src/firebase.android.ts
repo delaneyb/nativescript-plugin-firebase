@@ -2227,7 +2227,7 @@ const ensureFirestore = (): void => {
   }
 };
 
-class FirestoreWriteBatch {
+class FirestoreWriteBatch implements firestore.WriteBatch {
 
   public nativeWriteBatch: com.google.firebase.firestore.WriteBatch;
 
