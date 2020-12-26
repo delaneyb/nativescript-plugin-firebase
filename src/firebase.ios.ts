@@ -1922,9 +1922,6 @@ const ensureFirestore = (): void => {
 
 firebase.firestore.WriteBatch = (nativeWriteBatch: FIRWriteBatch): firestore.WriteBatch => {
   class FirestoreWriteBatch implements firestore.WriteBatch {
-    constructor() {
-    }
-
     public set = (documentRef: firestore.DocumentReference, data: firestore.DocumentData, options?: firestore.SetOptions): firestore.WriteBatch => {
       fixSpecialFields(data);
       nativeWriteBatch.setDataForDocumentMerge(<any>data, (<any>documentRef).ios, options && options.merge);
