@@ -15,6 +15,7 @@ src/platforms/ios/Podfile
 src/platforms/android/include.gradle
 src/platforms/android/mlkithelpersrc/**/*.class
 !src/firebase.d.ts
+!src/firestore.d.ts
 !src/index.d.ts
 !src/references.d.ts
 !src/analytics/analytics.d.ts
