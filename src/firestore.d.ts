@@ -171,7 +171,7 @@ export interface Query {
 
   get(options?: GetOptions): Promise<QuerySnapshot>;
 
-  where(fieldPath: string, opStr: WhereFilterOp, value: any): Query;
+  where(fieldPath: string | firebase.firestore.FieldPath, opStr: WhereFilterOp, value: any): Query;
 
   orderBy(
     fieldPath: string,
@@ -212,7 +212,7 @@ export interface Query {
 }
 
 export interface CollectionGroup {
-  where(fieldPath: string, opStr: WhereFilterOp, value: any): Query;
+  where(fieldPath: string | firebase.firestore.FieldPath, opStr: WhereFilterOp, value: any): Query;
 }
 
 export interface CollectionReference extends Query {
