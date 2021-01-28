@@ -5,7 +5,8 @@ export type SupportedRegions =
     | "europe-west1"
     | "europe-west2"
     | "asia-east2"
-    | "asia-northeast1";
+    | "asia-northeast1"
+    | "australia-southeast1";
 
 export type HttpsCallable<I, O> = (callableData: I) => Promise<O>;
 
