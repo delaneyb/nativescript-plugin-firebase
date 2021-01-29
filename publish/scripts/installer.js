@@ -296,25 +296,25 @@ function echoAndroidManifestChanges(result) {
 
 function activateAndroidPushNotificationsLib(enable) {
   if (enable && fs.existsSync(path.join(directories.android, 'firebase-release.aar-disabled'))) {
-    fs.renameSync(path.join(directories.android, 'firebase-release.aar-disabled'), path.join(directories.android, 'firebase-release.aar'));
+    fs.copyFileSync(path.join(directories.android, 'firebase-release.aar-disabled'), path.join(directories.android, 'firebase-release.aar'));
   } else if (!enable && fs.existsSync(path.join(directories.android, 'firebase-release.aar'))) {
-    fs.renameSync(path.join(directories.android, 'firebase-release.aar'), path.join(directories.android, 'firebase-release.aar-disabled'));
+    fs.unlinkSync(path.join(directories.android, 'firebase-release.aar'))
   }
 }
 
 function activateAndroidMLKitCustomModelLib(enable) {
   if (enable && fs.existsSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar-disabled'))) {
-    fs.renameSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar-disabled'), path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar'));
+    fs.copyFileSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar-disabled'), path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar'));
   } else if (!enable && fs.existsSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar'))) {
-    fs.renameSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar'), path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar-disabled'));
+    fs.unlinkSync(path.join(directories.android, 'nativescript-firebase-mlkit-helper.jar'));
   }
 }
 
 function activateIOSMLKitCameraFramework(enable) {
   if (enable && fs.existsSync(path.join(directories.ios, 'TNSMLKitCamera.framework-disabled'))) {
-    fs.renameSync(path.join(directories.ios, 'TNSMLKitCamera.framework-disabled'), path.join(directories.ios, 'TNSMLKitCamera.framework'));
+    fs.copyFileSync(path.join(directories.ios, 'TNSMLKitCamera.framework-disabled'), path.join(directories.ios, 'TNSMLKitCamera.framework'));
   } else if (!enable && fs.existsSync(path.join(directories.ios, 'TNSMLKitCamera.framework'))) {
-    fs.renameSync(path.join(directories.ios, 'TNSMLKitCamera.framework'), path.join(directories.ios, 'TNSMLKitCamera.framework-disabled'));
+    fs.unlinkSync(path.join(directories.ios, 'TNSMLKitCamera.framework'));
   }
 }
 
