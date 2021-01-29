@@ -31,6 +31,7 @@ src/platforms/android/mlkithelpersrc/**/*.class
 !src/platforms/android/typings/**/*.d.ts
 !src/functions/functions.d.ts
 !src/scripts/entitlements*.js
+!src/scripts/postinstall.js
 !demo/karma.conf.js
 demo/*.d.ts
 demo/firebasefunctions/functions/lib
@@ -53,3 +54,5 @@ node_modules
 publish/package
 /npm-debug.log
 *.p12
+src/platforms/android/firebase-release.aar
+src/platforms/android/firebase.aar
