@@ -488,11 +488,18 @@ export namespace firebase {
   export interface FBErrorData {
     error: string;
   }
-
-  export interface AuthStateData {
-    loggedIn?: boolean;
-    user?: User;
+  
+  type AuthStateDataLoggedIn = {
+    loggedIn: true;
+    user: User;
   }
+  
+  type AuthStateDataLoggedOut = {
+    loggedIn: false;
+    user: null;
+  }
+
+  export type AuthStateData = AuthStateDataLoggedIn | AuthStateDataLoggedOut
 
   export interface AuthStateChangeListener {
     onAuthStateChanged: (data: AuthStateData) => void;
