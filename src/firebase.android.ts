@@ -536,19 +536,17 @@ firebase.init = arg => {
           firebase.addAuthStateListener(arg.onAuthStateChanged);
         }
 
-        // Listen to auth state changes
-        if (!firebase.authStateListener) {
-          firebase.authStateListener = new com.google.firebase.auth.FirebaseAuth.AuthStateListener({
-            onAuthStateChanged: fbAuth => {
-              const user = fbAuth.getCurrentUser();
-              firebase.notifyAuthStateListeners({
-                loggedIn: user !== null,
-                user: toLoginResult(user)
-              });
-            }
-          });
-          firebaseAuth.addAuthStateListener(firebase.authStateListener);
-        }
+        // firebase.authStateListener would only be truthy if the plugin consumer had set it's value before calling init(), but this is not an exposed property on the firebase object, so we can safely assume it will always be falsy
+        firebase.authStateListener = new com.google.firebase.auth.FirebaseAuth.AuthStateListener({
+          onAuthStateChanged: fbAuth => {
+            const user = fbAuth.getCurrentUser();
+            firebase.notifyAuthStateListeners({
+              loggedIn: user !== null,
+              user: toLoginResult(user)
+            });
+          }
+        });
+        firebaseAuth.addAuthStateListener(firebase.authStateListener);
       }
 
       // Firebase notifications (FCM)
