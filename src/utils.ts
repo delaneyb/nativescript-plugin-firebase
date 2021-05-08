@@ -34,7 +34,11 @@ export class Utils {
       node = {};
       for (i = 0, l = oKeyArr.count; i < l; i++) {
         key = oKeyArr.objectAtIndex(i);
-        const val = objCObj.valueForKey(key);
+        // valueForKey must not be used here as it will break if the NSDictionary has a key starting
+        // with "@". The additionalUserData.profile obj from a microsoft account sign in contains
+        // such a key, "@odata.context". See:
+        // https://developer.apple.com/documentation/foundation/nsdictionary/1410210-valueforkey?language=objc#discussion
+        const val = objCObj.objectForKey(key);
 
         // Firestore can store nulls
         if (val === null) {
