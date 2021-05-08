@@ -451,6 +451,9 @@ firebase.toJsObject = javaObj => {
         node[javaObj.keyAt(i)] = firebase.toJsObject(javaObj.valueAt(i));
       }
       break;
+    case 'org.json.JSONObject$1':
+      node = JSON.parse(javaObj.toString())
+      break
     default:
       try {
         node = {};
