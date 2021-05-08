@@ -27,10 +27,10 @@
   },
   "scripts": {
     "clean": "npx rimraf node_modules package-lock.json && npm i --ignore-scripts && ts-patch install",
-    "postinstall": "node postinstall-hooks.js && node scripts/postinstall.js",
+    "postinstall": "node postinstall-hooks.js && node ../publish/scripts/installer.js",
     "preuninstall": "node preuninstall-hooks.js",
-    "setup": "node scripts/postinstall.js setup",
-    "config": "node scripts/postinstall.js config",
+    "setup": "node ../publish/scripts/installer.js setup",
+    "config": "node ../publish/scripts/installer.js config",
     "tsc": "ts-patch install && tsc -skipLibCheck",
     "plugin.tscwatch": "npm run tsc -- -w",
     "package": "cd ../publish && ./pack.sh",
