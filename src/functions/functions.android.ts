@@ -1,3 +1,4 @@
+import { functionsRegions } from ".";
 import * as firebase from "../firebase";
 import { firebase as firebaseCommon } from "../firebase-common";
 import { HttpsCallable } from "./functions";
@@ -30,6 +31,8 @@ export function httpsCallable<I = {}, O = {}>(functionName: string, region: fire
 }
 
 export function useFunctionsEmulator(origin: string): void {
-  com.google.firebase.functions.FirebaseFunctions.getInstance()
-      .useFunctionsEmulator(origin);
+  for (const region of functionsRegions) {
+    com.google.firebase.functions.FirebaseFunctions.getInstance(region)
+        .useFunctionsEmulator(origin);
+  }
 }
