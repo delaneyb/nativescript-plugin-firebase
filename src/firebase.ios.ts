@@ -623,70 +623,49 @@ firebase.init = arg => {
   });
 };
 
-firebase.getRemoteConfig = arg => {
-  return new Promise((resolve, reject) => {
-    try {
-      if (typeof (FIRRemoteConfig) === "undefined") {
-        reject("Uncomment RemoteConfig in the plugin's Podfile first");
-        return;
-      }
+firebase.getRemoteConfig = async arg => {
+  if (typeof (FIRRemoteConfig) === "undefined")
+    throw new Error("Uncomment RemoteConfig in the plugin's Podfile first");
 
-      if (arg.properties === undefined) {
-        reject("Argument 'properties' is missing");
-        return;
-      }
+  if (arg.properties === undefined)
+    throw new Error("Argument 'properties' is missing");
 
-      // Get a Remote Config object instance
-      const firebaseRemoteConfig = FIRRemoteConfig.remoteConfig();
+  // Get a Remote Config object instance
+  const firebaseRemoteConfig = FIRRemoteConfig.remoteConfig();
 
-      // Enable developer mode to allow for frequent refreshes of the cache
-      // TODO this is deprecated (but not removed yet), see https://firebase.google.com/support/release-notes/ios#remote-config_2
-      firebaseRemoteConfig.configSettings = new FIRRemoteConfigSettings({developerModeEnabled: arg.developerMode || false});
-
-      const dic: any = NSMutableDictionary.new();
-      for (let p in arg.properties) {
-        const prop = arg.properties[p];
-        if (prop.default !== undefined) {
-          dic.setObjectForKey(prop.default, prop.key);
-        }
-      }
-      firebaseRemoteConfig.setDefaults(dic);
-
-      const onCompletion = (remoteConfigFetchStatus, error) => {
-        if (remoteConfigFetchStatus === FIRRemoteConfigFetchStatus.Success ||
-            remoteConfigFetchStatus === FIRRemoteConfigFetchStatus.Throttled) {
-
-          const activated = firebaseRemoteConfig.activateFetched();
-
-          const result = {
-            lastFetch: firebaseRemoteConfig.lastFetchTime,
-            throttled: remoteConfigFetchStatus === FIRRemoteConfigFetchStatus.Throttled,
-            properties: {}
-          };
-
-          for (let p in arg.properties) {
-            const prop = arg.properties[p];
-            const key = prop.key;
-            const value = firebaseRemoteConfig.configValueForKey(key).stringValue;
-            // we could have the user pass in the type but this seems easier to use
-            result.properties[key] = firebase.strongTypeify(value);
-          }
-          resolve(result);
-
-        } else {
-          reject(error ? error.localizedDescription : "Unknown error, fetch status: " + remoteConfigFetchStatus);
-        }
-      };
-
-      // default 12 hours, just like the SDK does
-      const expirationDuration = arg.cacheExpirationSeconds || 43200;
-
-      firebaseRemoteConfig.fetchWithExpirationDurationCompletionHandler(expirationDuration, onCompletion);
-    } catch (ex) {
-      console.log("Error in firebase.getRemoteConfig: " + ex);
-      reject(ex);
+  const dic: any = NSMutableDictionary.new();
+  for (let p in arg.properties) {
+    const prop = arg.properties[p];
+    if (prop.default !== undefined) {
+      dic.setObjectForKey(prop.default, prop.key);
     }
-  });
+  }
+
+  firebaseRemoteConfig.setDefaults(dic);
+  // Default to 12 hour cache expiration
+  const status = await new Promise((resolve, reject) => firebaseRemoteConfig.fetchWithExpirationDurationCompletionHandler(arg.cacheExpirationSeconds || 12 * 60 * 60, (changed, err) => {
+    if (err) {
+      reject(err.localizedDescription)
+    } else {
+      resolve(changed)
+    }
+  }))
+  
+  const result = {
+    lastFetch: firebaseRemoteConfig.lastFetchTime,
+    throttled: status === FIRRemoteConfigFetchStatus.Throttled,
+    properties: {}
+  }
+
+  for (let p in arg.properties) {
+    const prop = arg.properties[p];
+    const key = prop.key;
+    const value = firebaseRemoteConfig.configValueForKey(key).stringValue;
+    // we could have the user pass in the type but this seems easier to use
+    result.properties[key] = firebase.strongTypeify(value);
+  }
+
+  return result
 };
 
 firebase.getCurrentUser = arg => {
