@@ -229,6 +229,8 @@ class DocumentSnapshot extends DocumentSnapshotBase {
 // Note that FIRApp.configure must be called only once, but not here (see https://github.com/EddyVerbruggen/nativescript-plugin-firebase/issues/564)
 
 firebase.authStateListener = null;
+firebase._appleSignInIdToken = null;
+firebase._microsoftSignInIdToken = null;
 firebase.addOnMessageReceivedCallback = firebaseMessaging.addOnMessageReceivedCallback;
 firebase.addOnPushTokenReceivedCallback = firebaseMessaging.addOnPushTokenReceivedCallback;
 firebase.registerForPushNotifications = firebaseMessaging.registerForPushNotifications;
@@ -812,7 +814,9 @@ function toLoginResult(user, additionalUserInfo?: FIRAdditionalUserInfo): User {
         const gidCurrentIdToken = GIDSignIn.sharedInstance().currentUser.authentication.idToken;
         providers.push({id: pid, token: gidCurrentIdToken});
       } else if (pid === "apple.com") {
-        // TODO
+        providers.push({id: pid, token: firebase._appleSignInIdToken});
+      } else if (pid === "microsoft.com") {
+        providers.push({id: pid, token: firebase._microsoftSignInIdToken})
       } else {
         providers.push({id: pid});
       }
@@ -1181,6 +1185,52 @@ firebase.login = arg => {
 
         sIn.delegate = firebase.googleSignInDelegate;
         sIn.signIn();
+      } else if (arg.type === firebase.LoginType.MICROSOFT) {
+        const provider = FIROAuthProvider.providerWithProviderID("microsoft.com");
+        const { scopes, customParams } = arg.microsoftOptions || {}
+        
+        if (scopes) {
+          provider.scopes = scopes
+        }
+        
+        // For the parameters Microsoft supports, see the Microsoft OAuth Documentation:
+        // https://docs.microsoft.com/en-us/azure/active-directory/develop/v1-protocols-oauth-code
+        if (customParams) {
+          provider.customParameters = customParams
+        }
+
+        // Authenticate with Firebase using the OAuth Provider Object
+        provider.getCredentialWithUIDelegateCompletion(null, (fIRAuthCredential, error) => {
+          if (error) {
+            reject(error.localizedDescription)
+          } else {
+            /** Sets _microsoftSignInIdToken before calling onCompletionWithAuthResult, so that it's
+             * available in toLoginResult */
+            const handleMicrosoftAuthResult = (authResult: FIRAuthDataResult, err?: NSError) => {
+              firebase._microsoftSignInIdToken = authResult?.credential.IDToken
+              onCompletionWithAuthResult(authResult, err)
+            }
+            
+            // If the user is already signed in, link the credential to the existing account,
+            // otherwise perform a regular sign on
+            if (firebase.fAuth.currentUser) {
+              FIRAuth.auth().currentUser.linkWithCredentialCompletion(fIRAuthCredential, (user, error) => {
+                if (error) {
+                  // The credential we tried to link to the logged in account is probably already
+                  // linked to another existing account. Instead of throwing the error just sign the
+                  // user into that other existing account.
+                  firebase.fAuth.signInWithCredentialCompletion(fIRAuthCredential, handleMicrosoftAuthResult);
+                } else {
+                  handleMicrosoftAuthResult(user);
+                }
+                firebase.fAuth = null
+              });
+            } else {
+              FIRAuth.auth().signInWithCredentialCompletion(fIRAuthCredential, handleMicrosoftAuthResult)
+            }
+          }
+        })
+        
       } else {
         reject("Unsupported auth type: " + arg.type);
       }
@@ -2655,11 +2705,14 @@ class ASAuthorizationControllerDelegateImpl extends NSObject /* implements ASAut
         if (error) {
           this.reject(error.localizedDescription);
         } else {
+          firebase._appleSignInIdToken = authResult.credential.IDToken
+          console.log(`Assigned _appleSignInIdToken ${firebase._appleSignInIdToken}. Is it the same? If so we can probably assign this earlier`);
+          // resolve / notifyAuthStateListeners order re-arranged to match onCompletionWithAuthResult
+          this.resolve(toLoginResult(authResult && authResult.user, authResult && authResult.additionalUserInfo));
           firebase.notifyAuthStateListeners({
             loggedIn: true,
             user: toLoginResult(authResult.user)
           });
-          this.resolve(toLoginResult(authResult && authResult.user, authResult && authResult.additionalUserInfo));
           firebase.appleAuthDelegate = null;
         }
       }

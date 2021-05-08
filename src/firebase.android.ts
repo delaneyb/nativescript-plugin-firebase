@@ -225,6 +225,7 @@ firebase._cachedDynamicLink = null;
 firebase._googleSignInIdToken = null;
 firebase._facebookAccessToken = null;
 firebase._appleSignInIdToken = null;
+firebase._microsoftSignInIdToken = null;
 
 let fbCallbackManager = null;
 let initializeArguments: any;
@@ -972,6 +973,8 @@ function toLoginResult(user, additionalUserInfo?): User {
       providers.push({id: pid, token: firebase._googleSignInIdToken});
     } else if (pid === 'apple.com') {
       providers.push({id: pid, token: firebase._appleSignInIdToken});
+    } else if (pid === 'microsoft.com') {
+      providers.push({id: pid, token: firebase._microsoftSignInIdToken});
     } else {
       providers.push({id: pid});
     }
@@ -1304,6 +1307,56 @@ firebase.login = arg => {
               .addOnFailureListener(onFailureListener);
         }
 
+      } else if (arg.type === firebase.LoginType.MICROSOFT) {
+        const onSuccessListener = new gmsTasks.OnSuccessListener({
+          onSuccess: (authResult: com.google.firebase.auth.AuthResult) => {
+            // v This is where the users app roles are exposed to us
+            firebase._microsoftSignInIdToken = (<any>authResult.getCredential()).getIdToken();
+            // console.log(`The OAuth ID token is`, firebase._microsoftSignInIdToken);
+            // But this one is what would be needed to actually verify the user?
+            // console.log(`The OAuth access token is`, (<any>authResult.getCredential()).getAccessToken());
+            const loginResult = toLoginResult(authResult.getUser(), authResult.getAdditionalUserInfo());
+            firebase.notifyAuthStateListeners({
+              loggedIn: true,
+              user: loginResult
+            });
+            resolve(loginResult);
+          }
+        });
+
+        const onFailureListener = new gmsTasks.OnFailureListener({
+          onFailure: exception => {
+            reject(exception.getMessage());
+          }
+        });
+
+        const pendingAuthResult = firebaseAuth.getPendingAuthResult();
+        if (pendingAuthResult) {
+          pendingAuthResult
+            .addOnSuccessListener(onSuccessListener)
+            .addOnFailureListener(onFailureListener);
+
+        } else {
+          // no pending result; start the sign in flow
+          const oAuthProviderBuilder = com.google.firebase.auth.OAuthProvider.newBuilder("microsoft.com");
+
+          if (arg.microsoftOptions?.scopes) {
+            oAuthProviderBuilder.setScopes(firebase.toJavaArray(arg.microsoftOptions.scopes));
+          }
+
+          if (arg.microsoftOptions?.customParams) {
+            for (const [k, v] of Object.entries(arg.microsoftOptions.customParams)) {
+              oAuthProviderBuilder.addCustomParameter(k, v);
+            }
+          }
+
+          const provider = oAuthProviderBuilder.build();
+
+          firebaseAuth.startActivityForSignInWithProvider(Application.android.foregroundActivity || Application.android.startActivity, provider)
+            .addOnSuccessListener(onSuccessListener)
+            .addOnFailureListener(onFailureListener);
+        }
+
       } else if (arg.type === firebase.LoginType.GOOGLE) {
         if (typeof (com.google.android.gms.auth.api.Auth) === "undefined") {
           reject("Google Sign In not installed - see gradle config");
@@ -1435,10 +1488,16 @@ firebase.reauthenticate = arg => {
           return;
         }
         authCredential = com.google.firebase.auth.FacebookAuthProvider.getCredential(firebase._facebookAccessToken);
+      } else if (arg.type === firebase.LoginType.MICROSOFT) {
+        if (!firebase._microsoftSignInIdToken) {
+          reject("Missing microsoftSignInIdToken");
+          return;
+        }
+        authCredential = com.google.firebase.auth.OAuthProvider.getCredential(firebase._microsoftSignInIdToken);
       }
 
       if (authCredential === null) {
-        reject("arg.type should be one of LoginType.PASSWORD | LoginType.GOOGLE | LoginType.FACEBOOK");
+        reject("arg.type should be one of LoginType.PASSWORD | LoginType.GOOGLE | LoginType.FACEBOOK | LoginType.MICROSOFT");
         return;
       }
 

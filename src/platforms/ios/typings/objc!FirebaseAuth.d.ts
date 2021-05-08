@@ -198,6 +198,8 @@ declare class FIRAuthCredential extends NSObject {
 	static new(): FIRAuthCredential; // inherited from NSObject
 
 	readonly provider: string;
+	
+	readonly IDToken: string;
 }
 
 declare class FIRAuthDataResult extends NSObject {
